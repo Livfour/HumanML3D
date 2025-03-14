@@ -48,9 +48,7 @@ if __name__ == "__main__":
         "pose_body": torch.Tensor(smpl_params_raw["body_pose"][:, :63]).to(device),
         "pose_hand": torch.zeros(len(smpl_params_raw["transl"]), 90).to(device),
         "trans": torch.Tensor(smpl_params_raw["transl"]).to(device),
-        "betas": torch.Tensor(
-            np.repeat(smpl_params_raw["betas"][np.newaxis], repeats=len(smpl_params_raw["transl"]), axis=0)
-        ).to(device),
+        "betas": torch.Tensor(smpl_params_raw["betas"]).to(device),
     }
     with torch.no_grad():
         body = male_bm(**body_parms)
@@ -59,4 +57,4 @@ if __name__ == "__main__":
     pose_seq_np_n[..., 0] *= -1
     source_data = pose_seq_np_n[:, :joints_num]
     data, ground_positions, positions, l_velocity = process_file(source_data, 0.002)
-    np.save(output_dir / file_name, data)
+    np.save(output_dir / output_file_name, data)

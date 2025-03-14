@@ -25,7 +25,7 @@ joints_num = 22
 
 n_raw_offsets = torch.from_numpy(t2m_raw_offsets)
 kinematic_chain = t2m_kinematic_chain
-example_data = np.load("/data/junfeng_data/workspace/HumanML3D/joints/000021.npy")
+example_data = np.load("./example_data.npy")
 example_data = example_data.reshape(len(example_data), -1, 3)
 example_data = torch.from_numpy(example_data)
 tgt_skel = Skeleton(n_raw_offsets, kinematic_chain, "cpu")
@@ -93,9 +93,7 @@ def process_file(positions, feet_thre):
     # forward (3,), rotate around y-axis
     forward_init = np.cross(np.array([[0, 1, 0]]), across, axis=-1)
     # forward (3,)
-    forward_init = (
-        forward_init / np.sqrt((forward_init**2).sum(axis=-1))[..., np.newaxis]
-    )
+    forward_init = forward_init / np.sqrt((forward_init**2).sum(axis=-1))[..., np.newaxis]
 
     #     print(forward_init)
 
@@ -151,17 +149,13 @@ def process_file(positions, feet_thre):
         positions[..., 0] -= positions[:, 0:1, 0]
         positions[..., 2] -= positions[:, 0:1, 2]
         """All pose face Z+"""
-        positions = qrot_np(
-            np.repeat(r_rot[:, None], positions.shape[1], axis=1), positions
-        )
+        positions = qrot_np(np.repeat(r_rot[:, None], positions.shape[1], axis=1), positions)
         return positions
 
     def get_quaternion(positions):
         skel = Skeleton(n_raw_offsets, kinematic_chain, "cpu")
         # (seq_len, joints_num, 4)
-        quat_params = skel.inverse_kinematics_np(
-            positions, face_joint_indx, smooth_forward=False
-        )
+        quat_params = skel.inverse_kinematics_np(positions, face_joint_indx, smooth_forward=False)
 
         """Fix Quaternion Discontinuity"""
         quat_params = qfix(quat_params)
@@ -183,9 +177,7 @@ def process_file(positions, feet_thre):
     def get_cont6d_params(positions):
         skel = Skeleton(n_raw_offsets, kinematic_chain, "cpu")
         # (seq_len, joints_num, 4)
-        quat_params = skel.inverse_kinematics_np(
-            positions, face_joint_indx, smooth_forward=True
-        )
+        quat_params = skel.inverse_kinematics_np(positions, face_joint_indx, smooth_forward=True)
 
         """Quaternion to continuous 6D"""
         cont_6d_params = quaternion_to_cont6d_np(quat_params)
@@ -308,9 +300,7 @@ def recover_from_ric(data, joints_num):
     positions = positions.view(positions.shape[:-1] + (-1, 3))
 
     """Add Y-axis rotation to local joints"""
-    positions = qrot(
-        qinv(r_rot_quat[..., None, :]).expand(positions.shape[:-1] + (4,)), positions
-    )
+    positions = qrot(qinv(r_rot_quat[..., None, :]).expand(positions.shape[:-1] + (4,)), positions)
 
     """Add root XZ to joints"""
     positions[..., 0] += r_pos[..., 0:1]

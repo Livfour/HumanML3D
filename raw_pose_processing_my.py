@@ -43,13 +43,23 @@ if __name__ == "__main__":
     faces = c2c(male_bm.f)
 
     smpl_params_raw = np.load(smpl_params_path, allow_pickle=True)
+    if len(smpl_params_raw["global_orient"]) == 1:
+        repeat_times = 25
+    else:
+        repeat_times = 1
+
     body_parms = {
-        "root_orient": torch.Tensor(smpl_params_raw["global_orient"]).to(device),
-        "pose_body": torch.Tensor(smpl_params_raw["body_pose"][:, :63]).to(device),
-        "pose_hand": torch.zeros(len(smpl_params_raw["transl"]), 90).to(device),
-        "trans": torch.Tensor(smpl_params_raw["transl"]).to(device),
-        "betas": torch.Tensor(smpl_params_raw["betas"]).to(device),
+        "root_orient": torch.Tensor(smpl_params_raw["global_orient"]).to(device).repeat(repeat_times, 1),
+        "pose_body": torch.Tensor(smpl_params_raw["body_pose"][:, :63]).to(device).repeat(repeat_times, 1),
+        "pose_hand": torch.zeros(len(smpl_params_raw["transl"]), 90).to(device).repeat(repeat_times, 1),
+        "trans": torch.Tensor(smpl_params_raw["transl"]).to(device).repeat(repeat_times, 1),
+        "betas": torch.Tensor(
+            np.repeat(smpl_params_raw["betas"][np.newaxis], repeats=len(smpl_params_raw["transl"]), axis=0)
+        )
+        .to(device)
+        .repeat(repeat_times, 1),
     }
+
     with torch.no_grad():
         body = male_bm(**body_parms)
     pose_seq_np = body.Jtr.detach().cpu().numpy()
